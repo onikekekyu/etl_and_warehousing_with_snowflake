@@ -81,3 +81,19 @@ SELECT COUNT(*) FROM CLIENT_SUPPORT_ORDERS_PY_SNOWPIPE;
 SELECT * FROM CLIENT_SUPPORT_ORDERS_PY_SNOWPIPE 
 ORDER BY PURCHASE_TIME DESC 
 LIMIT 10;
+
+-- Check the copy history for your table
+SELECT
+    FILE_NAME,
+    STATUS,
+    ROW_PARSED,    -- Singular
+    ROW_COUNT,     -- The column for loaded rows
+    LAST_LOAD_TIME,
+    ERROR_COUNT,   -- Good to check for errors too
+FROM
+    TABLE(INFORMATION_SCHEMA.COPY_HISTORY(
+        TABLE_NAME => 'CLIENT_SUPPORT_ORDERS_PY_SNOWPIPE',
+        START_TIME => DATEADD(hours, -2, current_timestamp())
+    ))
+ORDER BY
+    LAST_LOAD_TIME DESC;

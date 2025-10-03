@@ -63,16 +63,9 @@ st.markdown("""
         display: inline-block;
         vertical-align: middle;
     }
-    /* Hide keyboard_arrow_down text glitch */
-    [data-testid="stExpander"] details summary::before {
-        content: "" !important;
-    }
-    /* Hide Material Icons text fallback */
-    .material-icons {
-        font-size: 0 !important;
-    }
-    .material-icons::before {
-        font-size: 1rem !important;
+    /* Masque le texte des icônes Material si la police est bloquée */
+    [data-testid="stIconMaterial"] {
+        font-size: 0px; /* Rend le texte de l'icône invisible */
     }
 </style>
 """, unsafe_allow_html=True)
@@ -297,7 +290,7 @@ def main():
         return
 
     # --- Sidebar ---
-    st.sidebar.image("https://images.emojiterra.com/google/noto-emoji/128px/1f451.png", width=80)
+    st.sidebar.image("shrek.png", width=80)
     st.sidebar.title("👑 Filtres du Dashboard")
 
     # Get Anthropic API key from .env or allow override

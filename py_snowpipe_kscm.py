@@ -1,3 +1,4 @@
+# py_snowpipe_kscm.py (version modifiée)
 import os
 import sys
 import logging
@@ -15,15 +16,15 @@ from snowflake.ingest import SimpleIngestManager
 from snowflake.ingest import StagedFile
 from cryptography.hazmat.primitives import serialization
 
+# NOUVEAU: Importer les classes nécessaires depuis notre installation Kafka
+from simple_kafka_setup import broker, SimpleKafkaConsumer
+
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
 
 def connect_snow():
-    """
-    Connects to Snowflake using key-pair authentication.
-    Uses the new naming convention from the setup script.
-    """
+    # ... (aucune modification dans cette fonction)
     private_key = "-----BEGIN PRIVATE KEY-----\n" + os.getenv("PRIVATE_KEY") + "\n-----END PRIVATE KEY-----\n"
     p_key = serialization.load_pem_private_key(
         bytes(private_key, 'utf-8'),
@@ -34,62 +35,41 @@ def connect_snow():
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
-
-    # --- CORRECTED CONNECTION DETAILS ---
-    # These now match the names defined in your setup_snowflake.sql script
     return snowflake.connector.connect(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        user=os.getenv("SNOWFLAKE_USER"), # Ensure this user is 'FIGURINE_USER' in your .env
+        user=os.getenv("SNOWFLAKE_USER"),
         private_key=pkb,
         role="FIGURINE_ROLE",
         database="FIGURINE_DB",
         schema="FIGURINE_SCHEMA",
         warehouse="FIGURINE_WH",
-        session_parameters={'QUERY_TAG': 'py-unified-snowpipe'},
+        session_parameters={'QUERY_TAG': 'py-unified-snowpipe-kafka'},
     )
 
 
 def save_table_to_snowflake(snow, records, table_name, temp_dir, ingest_manager_factory):
-    """
-    Saves a list of records to a Parquet file, uploads it to the correct stage,
-    and triggers the corresponding Snowpipe.
-    """
+    # ... (aucune modification dans cette fonction)
     if not records:
         logging.info(f"No records to process for table {table_name}.")
         return
 
     logging.info(f"Processing {len(records)} records for table '{table_name}'...")
-    
-    # --- CORRECTED SNOWFLAKE OBJECT NAMES ---
-    # These paths now correctly point to the objects created in your setup script
     pipe_name = f'FIGURINE_DB.FIGURINE_SCHEMA.{table_name.upper()}_PIPE'
     stage_name = f'@FIGURINE_DB.FIGURINE_SCHEMA.{table_name.upper()}_STAGE'
-    
     ingest_manager = ingest_manager_factory(pipe=pipe_name)
-
-    # Convert records to a Parquet file
     pandas_df = pd.DataFrame(records)
-    
-    # --- FIX: Convert all column names to uppercase to match Snowflake's default behavior ---
     pandas_df.columns = [col.upper() for col in pandas_df.columns]
-    
     arrow_table = pa.Table.from_pandas(pandas_df)
     file_name = f"{table_name.lower()}_{str(uuid.uuid1())}.parquet"
     out_path_obj = Path(temp_dir.name) / file_name
-
     pq.write_table(arrow_table, out_path_obj, use_dictionary=False, compression='SNAPPY')
-    
-    # Upload the file to the correct stage
     file_uri = out_path_obj.as_uri()
     logging.info(f"Uploading {file_name} to stage {stage_name}...")
     snow.cursor().execute(f"PUT '{file_uri}' {stage_name}")
     os.unlink(out_path_obj)
-
-    # Trigger Snowpipe for the uploaded file
     logging.info(f"Triggering Snowpipe for {file_name}...")
     staged_file = StagedFile(file_name, None)
     resp = ingest_manager.ingest_files([staged_file])
-    
     if resp.get('responseCode') == 'SUCCESS':
         logging.info(f"Successfully triggered ingest for {file_name}.")
     else:
@@ -101,12 +81,30 @@ if __name__ == "__main__":
     temp_dir = tempfile.TemporaryDirectory()
     
     try:
+        # NOUVEAU: Initialiser le consommateur Kafka
+        topic_name = os.getenv("KAFKA_TOPIC", "figurine_data_topic")
+        consumer = SimpleKafkaConsumer(broker, consumer_id="snowflake_ingestor")
+        consumer.subscribe(topic_name)
+        logging.info(f"📡 Waiting for data on Kafka topic '{topic_name}'...")
+        
+        # NOUVEAU: Boucler en attendant un message
+        message = None
+        while not message:
+            message = consumer.poll(timeout=10.0) # Attendre 10 secondes
+            if not message:
+                logging.info("... still waiting for message ...")
+
+        logging.info("✅ Message received from Kafka, starting ingestion process.")
+        
+        # MODIFIÉ: Charger les données depuis le message Kafka au lieu de stdin
+        # unified_dataset = json.load(sys.stdin) # Ligne originale
+        unified_dataset = json.loads(message['data']) # Nouvelle ligne
+        
+        logging.info("Successfully parsed JSON data from Kafka message.")
+        
+        # La suite du code reste identique
         snow = connect_snow()
         logging.info("Successfully connected to Snowflake.")
-
-        logging.info("Reading unified JSON data from stdin...")
-        unified_dataset = json.load(sys.stdin)
-        logging.info("Successfully parsed JSON data.")
 
         products_data = unified_dataset.get("products", [])
         customers_data = unified_dataset.get("customers", [])
@@ -134,7 +132,7 @@ if __name__ == "__main__":
             return SimpleIngestManager(
                 account=os.getenv("SNOWFLAKE_ACCOUNT"),
                 host=host,
-                user=os.getenv("SNOWFLAKE_USER"), # Ensure this user is 'FIGURINE_USER'
+                user=os.getenv("SNOWFLAKE_USER"),
                 pipe=pipe,
                 private_key=private_key
             )

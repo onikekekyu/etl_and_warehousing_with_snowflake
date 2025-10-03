@@ -1,4 +1,4 @@
-080540438CA# 🚀 Simple Kafka Tutorial (No Docker Required)
+# 🚀 Simple Kafka Tutorial (No Docker Required)
 
 This tutorial teaches Kafka concepts using a **Python-based implementation** that doesn't require Docker. Perfect for learning Kafka fundamentals without infrastructure complexity.
 

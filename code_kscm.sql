@@ -126,3 +126,10 @@ FROM TABLE(INFORMATION_SCHEMA.COPY_HISTORY(
     TABLE_NAME => 'ORDERS',
     START_TIME => DATEADD(hours, -1, current_timestamp())
 ));
+
+
+-- =============================================================================
+-- PART 4: Link RSA PUBLIC KEY to USER
+-- =============================================================================
+
+-- ALTER USER FIGURINE_USER SET RSA_PUBLIC_KEY="MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAzQYJCkiZtlZfzV8c3t7lzCQLUypp6OktrOj4+/l9eiChhpLmVb89jEmHADTNJapMaaU2Ga2u8veNvmCzHtUT+O8DJQXKVssd84Xwq82i6rRKYn6cq+qZfFGBWPL6VmXckV+LxJ/9m5Kt0MNZs8q+uTDRxan2szZZRbxNfJl7xgfTMZepqN0STU4am1fB0Rf0e9hdQD3sO/Gvz00NkrYhMGZqYDfojZ+qIJiSl8QeZU1EpmTnhey9uCMz+FOhSnNYzM3gzxtO4rELaY5Kqdi0Ba9PTzt7j8L6cbE3d7vWNKN+urpul5NFnPTLuL/L9DSFyyEdbKuYOirES+0nXNFceW80VjZXlTpqA8cGUYVLpgAo6B7akta4jgJioU05VvDGALZ1AJRV5v4S7iJ9h4t8JiPEz7upMH8wmZ9dTi2PRRi7uhSiM9jggBO9W+vSNe5GPwxyRjmH5s/n95ZNEGwXLRkDL7hBOY4rPGT6hpUKVZBwJZdbLg4QFw9gv8P9n1xwZEfgA2pZK3Wq3AnYLfui1rVk3YCH/KdHUltdmbYNnot6wjLT3sSpTcpv5kCuxpQxW+xJhdvNJpJz3BBJTupFKRzyzUzzJVO5rtV0LN23a/bRlq0X56BMG0UWDmQZyB6MVHolgNkvMlS3hkDvS3rdDtUP8CIk75RLZDuSWUnx4ScCAwEAAQ==";

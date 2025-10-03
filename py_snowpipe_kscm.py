@@ -1,4 +1,12 @@
-# py_snowpipe_kscm.py (version modifiée)
+# Terminal 1
+"""export KAFKA_TOPIC="figurine_data_topic"
+python py_snowpipe_kscm.py"""
+
+# Terminal 2
+"""export KAFKA_TOPIC="figurine_data_topic"
+python data_generator_kscm.py 20000 753 | python simple_publish_data.py"""
+
+
 import os
 import sys
 import logging
